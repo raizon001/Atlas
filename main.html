@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PROJECT ATLAS</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --bg-input-panel: #F0F5F4;
+      --text-dark-blue: #063558;
+      --text-green: #0A5446;
+      --border-color: #B8D0CB;
+      --tab-active: #0A5446;
+      --tab-inactive: #E2EBE9;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-image: url('seerelab.png');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      color: var(--text-dark-blue);
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 20px;
+    }
+
+    .interface-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(5px);
+      width: 100%; max-width: 1200px;
+      padding: 50px; border-radius: 16px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    }
+
+    .header-wrapper {
+      position: relative;
+      display: flex; justify-content: center; align-items: flex-start;
+      width: 100%; margin-bottom: 40px;
+    }
+
+    .top-left-logo {
+      position: absolute; left: 0; top: 0;
+      width: 110px; height: auto; border-radius: 8px;
+    }
+
+    .header-center { display: flex; flex-direction: column; align-items: center; gap: 15px; text-align: center; }
+
+    .logo {
+      height: 90px; width: 90px;
+      object-fit: contain; border-radius: 50%;
+      background-color: #FFFFFF;
+      box-shadow: 0 8px 20px rgba(6, 53, 88, 0.2);
+    }
+
+    header h1 { font-size: 34px; font-weight: 800; color: var(--text-dark-blue); margin: 0; }
+
+    .tab-bar { display: flex; gap: 4px; border-bottom: 3px solid var(--tab-active); margin-bottom: 40px; }
+
+    .tab {
+      padding: 12px 40px; background-color: var(--tab-inactive);
+      border: 1px solid var(--border-color); border-bottom: none;
+      border-radius: 8px 8px 0 0; cursor: pointer;
+      font-weight: 700; font-size: 16px; color: var(--text-dark-blue);
+    }
+
+    .tab.active { background-color: var(--tab-active); color: #FFFFFF; margin-bottom: -3px; border-color: var(--tab-active); }
+
+    .main-content { display: grid; grid-template-columns: 1fr auto 2fr; align-items: start; gap: 40px; }
+
+    .input-data-label { font-size: 20px; font-weight: 700; color: var(--text-green); }
+
+    .separator-line { width: 2px; background-color: var(--border-color); height: 100%; grid-column: 2; }
+
+    .form-panel {
+      grid-column: 3; background-color: var(--bg-input-panel);
+      padding: 40px; border-radius: 12px; border: 1px solid var(--border-color);
+      display: flex; flex-direction: column; gap: 18px;
+    }
+
+    .form-row { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 15px; }
+
+    .form-row label { font-size: 15px; font-weight: 600; text-align: right; }
+
+    input, textarea {
+      width: 100%; padding: 12px 15px;
+      border: 1px solid var(--border-color); border-radius: 6px;
+      background-color: #FFFFFF; font-size: 15px;
+    }
+
+    .search-controls { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-controls input { flex: 1; padding: 12px 18px; border-radius: 30px; }
+
+    .data-placeholder {
+      min-height: 300px; max-height: 450px; overflow-y: auto;
+      border: 2px dashed var(--border-color); border-radius: 8px;
+      background-color: #E8F0EF;
+    }
+
+    .results-table { width: 100%; border-collapse: collapse; background-color: #FFFFFF; font-size: 13px; }
+    .results-table th { background-color: var(--text-green); color: #FFFFFF; padding: 12px; text-align: left; white-space: nowrap; position: sticky; top: 0; z-index: 10;}
+    .results-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+    .results-table tr:hover { background-color: #F0F5F4; }
+
+    .record-count {
+      text-align: right; font-size: 14px; font-weight: 700; color: var(--text-dark-blue); margin-top: 8px; display: none;
+    }
+
+    /* Status/Remarks badges */
+    .status-pullout { color: #C53030; font-weight: 600; }
+    .status-functional { color: #276749; font-weight: 600; }
+    .status-new { color: #0A5446; background-color: #D1E0DD; padding: 2px 8px; border-radius: 12px; font-weight: 700; }
+
+    .button-container { display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; }
+    .btn { padding: 12px 30px; border-radius: 6px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;}
+    .btn-accept { background: var(--text-green); color: #FFFFFF; border: none; box-shadow: 0 4px 10px rgba(10, 84, 70, 0.2);}
+    .btn-accept:hover { background-color: #074034; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(10, 84, 70, 0.3);}
+    .btn-back { background: transparent; border: 2px solid var(--text-dark-blue); color: var(--text-dark-blue);}
+    .btn-back:hover { background-color: var(--text-dark-blue); color: #FFFFFF; }
+  </style>
+</head>
+<body>
+
+<div class="interface-container">
+  <header class="header-wrapper">
+    <img src="seiralab-logo.jpg" alt="Logo" class="top-left-logo">
+    <div class="header-center">
+      <img src="team.png" alt="Team Logo" class="logo">
+      <h1>PROJECT ATLAS</h1>
+    </div>
+  </header>
+
+  <nav class="tab-bar">
+    <div class="tab active" id="tab-account" onclick="switchTab('account')">Account Name</div>
+    <div class="tab" id="tab-summary" onclick="switchTab('summary')">Summary</div>
+  </nav>
+
+  <main class="main-content" id="view-account" style="display: contents;">
+    <aside class="input-data-label">Input Data</aside>
+    <div class="separator-line"></div>
+    <section class="form-panel">
+      <div class="form-row"><label>Account Name:</label><input type="text" id="account-name"></div>
+      <div class="form-row"><label>Description:</label><input type="text" id="description"></div>
+      <div class="form-row"><label>Brand:</label><input type="text" id="brand"></div>
+      <div class="form-row"><label>Model:</label><input type="text" id="model"></div>
+      <div class="form-row"><label>SN #:</label><input type="text" id="sn-num"></div>
+      <div class="form-row"><label>Installed Date:</label><input type="text" id="installed-date" placeholder="Select Month & Year"></div>
+      <div class="form-row"><label>Remarks:</label><textarea id="remarks"></textarea></div>
+      <div class="button-container">
+        <button class="btn btn-back" onclick="clearForm()">Clear</button>
+        <button class="btn btn-accept" onclick="saveRecord()">Accept</button>
+      </div>
+    </section>
+  </main>
+
+  <main class="main-content" id="view-summary" style="display: none;">
+    <aside class="input-data-label">Search Data</aside>
+    <div class="separator-line"></div>
+    <section class="form-panel">
+      <div class="search-controls">
+        <input type="text" id="search-bar" placeholder="Search records..." oninput="performSearch()">
+        <button class="btn btn-accept" onclick="performSearch()">Search</button>
+      </div>
+      <div class="data-placeholder" id="table-container">Loading...</div>
+      <div id="record-count" class="record-count"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+let globalDatabase = [];
+
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const resp = await fetch('./installation.xls');
+    if (!resp.ok) throw new Error("File not found");
+    const buffer = await resp.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: 'array' });
+    
+    globalDatabase = [];
+
+    // ONLY READ "Sheet1"
+    // We check if 'Sheet1' exists, if not we fall back to the very first sheet
+    const targetSheetName = wb.SheetNames.includes('Sheet1') ? 'Sheet1' : wb.SheetNames[0];
+    const ws = wb.Sheets[targetSheetName];
+    
+    const data = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    data.forEach(raw => {
+      const row = {
+        account: (raw['ACCOUNT NAME'] || raw['ACCOUNTNAME'] || '').toString().trim(),
+        desc:    (raw['DESC'] || '').toString().trim(),
+        brand:   (raw['MFG']  || '').toString().trim(),
+        model:   (raw['MODEL']|| '').toString().trim(),
+        sn:      (raw['SN']   || '').toString().trim(),
+        date:    formatDate(raw['INSTALL DATE']),
+        remarks: (raw['STATUS'] || raw['REMARKS'] || '').toString().trim()
+      };
+      
+      // Ignore rows that are completely blank or are just headers repeating
+      const acctLower = row.account.toLowerCase();
+      if ((row.account || row.sn) && acctLower !== 'account name' && acctLower !== 'accountname') {
+        globalDatabase.push(row);
+      }
+    });
+
+    performSearch();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('table-container').innerHTML = `<p style="color:red;">Error loading installation.xls</p>`;
+  }
+});
+
+function formatDate(raw) {
+  if (!raw || isNaN(raw)) return String(raw).trim() || '—';
+  const d = new Date(Math.round((Number(raw) - 25569) * 86400 * 1000));
+  return `${String(d.getUTCMonth() + 1).padStart(2, '0')} / ${d.getUTCFullYear()}`;
+}
+
+function saveRecord() {
+  const accountEl = document.getElementById('account-name');
+  if (accountEl.value.trim() === '') {
+    alert("Please enter an Account Name before saving.");
+    accountEl.focus();
+    return;
+  }
+
+  let formattedDate = document.getElementById('installed-date').value;
+  if (formattedDate && formattedDate.includes('-')) {
+    const parts = formattedDate.split('-');
+    if (parts.length >= 2) formattedDate = `${parts[1]} / ${parts[0]}`; 
+  }
+
+  globalDatabase.unshift({
+    account: accountEl.value.trim(),
+    desc:    document.getElementById('description').value.trim(),
+    brand:   document.getElementById('brand').value.trim(),
+    model:   document.getElementById('model').value.trim(),
+    sn:      document.getElementById('sn-num').value.trim(),
+    date:    formattedDate || '—',
+    remarks: document.getElementById('remarks').value.trim() || 'NEW ENTRY'
+  });
+
+  document.getElementById('search-bar').value = accountEl.value.trim();
+
+  clearForm();
+  switchTab('summary');
+  performSearch();
+}
+
+function performSearch() {
+  const q = document.getElementById('search-bar').value.toLowerCase();
+  const container = document.getElementById('table-container');
+  const countEl = document.getElementById('record-count');
+
+  const filtered = globalDatabase.filter(r => 
+    [r.account, r.desc, r.brand, r.model, r.sn, r.date, r.remarks].some(v => v.toLowerCase().includes(q))
+  );
+
+  countEl.style.display = 'block';
+  countEl.innerText = `Total: ${filtered.length}`;
+
+  container.style.border = filtered.length > 0 ? "none" : "2px dashed var(--border-color)";
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="padding: 40px; text-align: center;">No records found.</div>`;
+    return;
+  }
+
+  let html = `<table class="results-table"><thead><tr>
+    <th>Account Name</th><th>Description</th><th>Brand</th><th>Model</th><th>SN #</th><th>Installed Date</th><th>Remarks</th>
+  </tr></thead><tbody>`;
+
+  filtered.forEach(r => {
+    let remarksClass = '';
+    const rem = r.remarks.toLowerCase();
+    if (rem.includes('pullout'))    remarksClass = 'status-pullout';
+    if (rem.includes('functional')) remarksClass = 'status-functional';
+    if (rem.includes('new entry'))  remarksClass = 'status-new';
+
+    html += `<tr>
+      <td><strong>${r.account || '—'}</strong></td>
+      <td>${r.desc || '—'}</td>
+      <td>${r.brand || '—'}</td>
+      <td>${r.model || '—'}</td>
+      <td style="font-family:monospace;">${r.sn || '—'}</td>
+      <td style="white-space:nowrap;">${r.date || '—'}</td>
+      <td class="${remarksClass}">${r.remarks || '—'}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+function switchTab(t) {
+  const isAcc = t === 'account';
+  document.getElementById('tab-account').classList.toggle('active', isAcc);
+  document.getElementById('tab-summary').classList.toggle('active', !isAcc);
+  document.getElementById('view-account').style.display = isAcc ? 'contents' : 'none';
+  document.getElementById('view-summary').style.display = isAcc ? 'none' : 'contents';
+}
+
+function clearForm() {
+  ['account-name', 'description', 'brand', 'model', 'sn-num', 'remarks'].forEach(id => document.getElementById(id).value = '');
+  const dI = document.getElementById('installed-date');
+  dI.value = ''; dI.type = 'text';
+}
+
+const dI = document.getElementById('installed-date');
+dI.addEventListener('focus', function() { this.type='month'; try { this.showPicker(); } catch(e){} });
+dI.addEventListener('blur', function() { if(!this.value) this.type='text'; });
+</script>
+</body>
+</html>
